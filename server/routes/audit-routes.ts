@@ -2,11 +2,13 @@ import { Router, Response } from 'express';
 import { requireAuth, requireAdmin, AuthenticatedRequest } from '../auth/auth-middleware';
 import { DatabaseService } from '../db/database';
 import { ConversionQueue } from '../queue/conversion-queue';
-import { handleAppError } from '../errors/app-error';
+import { AuditService } from '../services/audit-service';
+import { handleAppError, AppError } from '../errors/app-error';
 
 const router = Router();
 const db = DatabaseService.getInstance();
 const queue = ConversionQueue.getInstance();
+const audit = AuditService.getInstance();
 
 // Audit logs list - STRICTLY ADMIN ONLY
 router.get('/audit', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
@@ -61,6 +63,91 @@ router.get('/stats', requireAuth, (req: AuthenticatedRequest, res: Response) => 
         centralizedErrorHandling: 'ACTIVE',
         queue: queueStats,
       },
+    });
+  } catch (err) {
+    handleAppError(err, res);
+  }
+});
+
+// List all users with statistics and status - STRICTLY ADMIN ONLY
+router.get('/admin/users', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const users = db.getAllUsersWithStats();
+    res.json({ users });
+  } catch (err) {
+    handleAppError(err, res);
+  }
+});
+
+// Soft-delete / Ban User - STRICTLY ADMIN ONLY
+router.post('/admin/users/:id/ban', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const targetUserId = req.params.id;
+    const { reason } = req.body;
+
+    // Prevent admin self-ban
+    if (req.user?.id === targetUserId) {
+      throw AppError.forbidden('Você não pode banir a sua própria conta de administrador.');
+    }
+
+    const targetUser = db.findUserById(targetUserId);
+    if (!targetUser) {
+      throw AppError.notFound('Usuário não encontrado.');
+    }
+
+    db.banUser(targetUserId, reason);
+
+    audit.logAction({
+      userId: req.user?.id,
+      action: 'USER_BAN',
+      resource: 'user',
+      resourceId: targetUserId,
+      req,
+      success: true,
+      metadata: {
+        targetUserEmail: targetUser.email,
+        targetUserId,
+        reason: reason || 'Banned by admin',
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Usuário ${targetUser.email} banido com sucesso.`,
+    });
+  } catch (err) {
+    handleAppError(err, res);
+  }
+});
+
+// Restore / Unban User - STRICTLY ADMIN ONLY
+router.post('/admin/users/:id/unban', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const targetUserId = req.params.id;
+    const targetUser = db.findUserById(targetUserId);
+    if (!targetUser) {
+      throw AppError.notFound('Usuário não encontrado.');
+    }
+
+    db.unbanUser(targetUserId);
+
+    audit.logAction({
+      userId: req.user?.id,
+      action: 'USER_UNBAN_RESTORE',
+      resource: 'user',
+      resourceId: targetUserId,
+      req,
+      success: true,
+      metadata: {
+        targetUserEmail: targetUser.email,
+        targetUserId,
+        accountReactivated: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Usuário ${targetUser.email} reativado com sucesso.`,
     });
   } catch (err) {
     handleAppError(err, res);

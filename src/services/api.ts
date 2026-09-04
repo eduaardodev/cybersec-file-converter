@@ -6,6 +6,7 @@ import {
   SecurityEvent,
   DashboardStats,
   ConversionCapability,
+  AdminUserSummary,
 } from '../types/client';
 
 class ApiService {
@@ -179,6 +180,24 @@ class ApiService {
 
   public async getStats(): Promise<DashboardStats> {
     return this.request<DashboardStats>('/api/stats');
+  }
+
+  // ADMIN USER MANAGEMENT
+  public async getAdminUsers(): Promise<{ users: AdminUserSummary[] }> {
+    return this.request<{ users: AdminUserSummary[] }>('/api/admin/users');
+  }
+
+  public async banUser(userId: string, reason?: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/api/admin/users/${userId}/ban`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  public async unbanUser(userId: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/api/admin/users/${userId}/unban`, {
+      method: 'POST',
+    });
   }
 
   // SECURITY DEMO CALLS

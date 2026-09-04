@@ -4,6 +4,21 @@ export interface User {
   role: 'user' | 'admin';
   createdAt: string;
   updatedAt: string;
+  isBanned?: boolean;
+  bannedAt?: string | null;
+  banReason?: string | null;
+}
+
+export interface AdminUserSummary {
+  id: string;
+  email: string;
+  role: 'user' | 'admin';
+  createdAt: string;
+  updatedAt: string;
+  isBanned: boolean;
+  bannedAt?: string | null;
+  banReason?: string | null;
+  conversionsCount: number;
 }
 
 export interface StoredFile {

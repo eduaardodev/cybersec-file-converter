@@ -102,6 +102,13 @@ export default function App() {
 
   const isAdmin = user?.role === 'admin';
 
+  // Strictly enforce that admin does not access Conversion Hub
+  useEffect(() => {
+    if (isAdmin && currentTab === 'convert') {
+      setCurrentTab('dashboard');
+    }
+  }, [isAdmin, currentTab]);
+
   return (
     <div className="min-h-screen bg-[#0a0a0c] text-slate-300 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
       {/* Header */}
@@ -137,7 +144,7 @@ export default function App() {
             />
           )}
 
-          {currentTab === 'convert' && (
+          {currentTab === 'convert' && !isAdmin && (
             <ConverterView
               onConversionCreated={() => {
                 refreshData();
@@ -158,6 +165,8 @@ export default function App() {
               isAuthenticated={!!user}
               onRequireAuth={() => setIsAuthOpen(true)}
               isAdmin={isAdmin}
+              currentUser={user}
+              onToast={showToast}
             />
           )}
 

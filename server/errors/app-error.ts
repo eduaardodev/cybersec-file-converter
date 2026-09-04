@@ -28,6 +28,10 @@ export class AppError extends Error {
     return new AppError('AUTHORIZATION_ERROR', message, 403);
   }
 
+  public static forbidden(message: string = 'Forbidden: Access denied'): AppError {
+    return new AppError('AUTHORIZATION_ERROR', message, 403);
+  }
+
   public static fileTooLarge(message: string = 'The uploaded file exceeds the allowed size limit (10 MB).'): AppError {
     return new AppError('FILE_TOO_LARGE', message, 413);
   }

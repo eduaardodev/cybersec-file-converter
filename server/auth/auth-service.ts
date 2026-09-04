@@ -124,6 +124,28 @@ export class AuthService {
       throw AppError.authentication('Invalid email or password.');
     }
 
+    // Check if account has been suspended/banned by administrator
+    if (user.isBanned) {
+      this.audit.logAction({
+        userId: user.id,
+        action: 'AUTH_LOGIN_BLOCKED_BANNED',
+        resource: 'user',
+        resourceId: user.id,
+        req,
+        success: false,
+        metadata: {
+          attemptedEmail: cleanEmail,
+          reason: 'account_banned',
+          banReason: user.banReason || 'Banned by admin',
+        },
+      });
+      throw AppError.forbidden(
+        user.banReason
+          ? `Esta conta foi suspensa pelo administrador: ${user.banReason}`
+          : 'Esta conta foi suspensa pelo administrador.'
+      );
+    }
+
     this.audit.logAction({
       userId: user.id,
       action: 'AUTH_LOGIN_SUCCESS',

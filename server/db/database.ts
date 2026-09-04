@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import initSqlJs, { Database, SqlJsStatic } from 'sql.js';
-import { User, StoredFile, ConversionJob, AuditLog, SecurityEvent } from '../types';
+import { User, StoredFile, ConversionJob, AuditLog, SecurityEvent, AdminUserSummary } from '../types';
 
 export class DatabaseService {
   private static instance: DatabaseService;
@@ -67,6 +67,9 @@ export class DatabaseService {
         email TEXT UNIQUE NOT NULL,
         passwordHash TEXT NOT NULL,
         role TEXT NOT NULL DEFAULT 'user',
+        isBanned INTEGER NOT NULL DEFAULT 0,
+        bannedAt TEXT,
+        banReason TEXT,
         createdAt TEXT NOT NULL,
         updatedAt TEXT NOT NULL
       );
@@ -134,6 +137,23 @@ export class DatabaseService {
       CREATE INDEX IF NOT EXISTS idx_security_created ON security_events (createdAt DESC);
     `);
 
+    // Dynamic backward-compatible schema upgrade for account status fields
+    try {
+      this.db.run(`ALTER TABLE users ADD COLUMN isBanned INTEGER NOT NULL DEFAULT 0`);
+    } catch {
+      // Column already exists
+    }
+    try {
+      this.db.run(`ALTER TABLE users ADD COLUMN bannedAt TEXT`);
+    } catch {
+      // Column already exists
+    }
+    try {
+      this.db.run(`ALTER TABLE users ADD COLUMN banReason TEXT`);
+    } catch {
+      // Column already exists
+    }
+
     this.persist();
   }
 
@@ -177,9 +197,20 @@ export class DatabaseService {
 
   // USER REPOSITORY
   public createUser(user: User): void {
+    const isBanned = user.isBanned ? 1 : 0;
     this.execute(
-      `INSERT INTO users (id, email, passwordHash, role, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)`,
-      [user.id, user.email, user.passwordHash, user.role, user.createdAt, user.updatedAt]
+      `INSERT INTO users (id, email, passwordHash, role, isBanned, bannedAt, banReason, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        user.id,
+        user.email,
+        user.passwordHash,
+        user.role,
+        isBanned,
+        user.bannedAt || null,
+        user.banReason || null,
+        user.createdAt,
+        user.updatedAt,
+      ]
     );
   }
 
@@ -189,6 +220,58 @@ export class DatabaseService {
 
   public findUserById(id: string): User | null {
     return this.queryOne<User>(`SELECT * FROM users WHERE id = ?`, [id]);
+  }
+
+  // Get all users with their conversion statistics and soft-delete/ban status
+  public getAllUsersWithStats(): AdminUserSummary[] {
+    const rows = this.query<any>(`
+      SELECT 
+        u.id,
+        u.email,
+        u.role,
+        u.createdAt,
+        u.updatedAt,
+        COALESCE(u.isBanned, 0) as isBanned,
+        u.bannedAt,
+        u.banReason,
+        COUNT(c.id) as conversionsCount
+      FROM users u
+      LEFT JOIN conversions c ON u.id = c.userId
+      GROUP BY u.id
+      ORDER BY u.createdAt DESC
+    `);
+
+    return rows.map((r) => ({
+      id: r.id,
+      email: r.email,
+      role: r.role,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      isBanned: Boolean(r.isBanned),
+      bannedAt: r.bannedAt || null,
+      banReason: r.banReason || null,
+      conversionsCount: Number(r.conversionsCount || 0),
+    }));
+  }
+
+  // Ban / suspend user (preserves user data and conversion/audit history, revokes access)
+  public banUser(userId: string, reason?: string): boolean {
+    const now = new Date().toISOString();
+    this.execute(
+      `UPDATE users SET isBanned = 1, bannedAt = ?, banReason = ?, updatedAt = ? WHERE id = ?`,
+      [now, reason || 'Suspenso pelo administrador', now, userId]
+    );
+    return true;
+  }
+
+  // Restore/unban user
+  public unbanUser(userId: string): boolean {
+    const now = new Date().toISOString();
+    this.execute(
+      `UPDATE users SET isBanned = 0, bannedAt = NULL, banReason = NULL, updatedAt = ? WHERE id = ?`,
+      [now, userId]
+    );
+    return true;
   }
 
   // FILE REPOSITORY

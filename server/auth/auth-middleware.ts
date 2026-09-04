@@ -25,6 +25,10 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
       throw AppError.authentication('User associated with token no longer exists.');
     }
 
+    if (user.isBanned) {
+      throw AppError.forbidden('Esta conta foi suspensa pelo administrador.');
+    }
+
     const { passwordHash: _, ...safeUser } = user;
     req.user = safeUser;
     next();

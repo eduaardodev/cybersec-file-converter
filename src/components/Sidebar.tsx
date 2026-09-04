@@ -21,12 +21,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeJobsCount = 0,
   isAdmin = false,
 }) => {
-  const mainItems = [
+  const allMainItems = [
     {
       id: 'dashboard' as TabType,
       label: 'Dashboard',
       icon: LayoutDashboard,
-      description: 'Metrics & Activity Overview',
+      description: isAdmin ? 'Painel Central de Auditoria' : 'Metrics & Activity Overview',
       letter: 'D',
     },
     {
@@ -39,12 +39,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'history' as TabType,
-      label: 'History',
+      label: isAdmin ? 'Histórico de Usuários' : 'History',
       icon: History,
-      description: 'User Converted Archives',
+      description: isAdmin ? 'Conversões dos Usuários' : 'User Converted Archives',
       letter: 'H',
     },
   ];
+
+  // Remove Conversion Hub from Admin mode
+  const mainItems = isAdmin
+    ? allMainItems.filter((item) => item.id !== 'convert')
+    : allMainItems;
 
   const labItems = [
     {
