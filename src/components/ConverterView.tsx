@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   UploadCloud,
   FileText,
@@ -9,6 +9,8 @@ import {
   RotateCcw,
   Sparkles,
   Loader2,
+  Lock,
+  KeyRound,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { StoredFile, ConversionJob } from '../types/client';
@@ -18,6 +20,7 @@ interface ConverterViewProps {
   onDownload: (id: string, filename: string) => void;
   isAuthenticated: boolean;
   onRequireAuth: () => void;
+  onQuickDemoLogin?: () => void;
 }
 
 type StepStatus = 'idle' | 'uploading' | 'validating' | 'queued' | 'converting' | 'completed' | 'error';
@@ -27,6 +30,7 @@ export const ConverterView: React.FC<ConverterViewProps> = ({
   onDownload,
   isAuthenticated,
   onRequireAuth,
+  onQuickDemoLogin,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -34,7 +38,15 @@ export const ConverterView: React.FC<ConverterViewProps> = ({
   const [status, setStatus] = useState<StepStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [currentJob, setCurrentJob] = useState<ConversionJob | null>(null);
+  const [authLocked, setAuthLocked] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Automatically unlock inputs when the user authenticates
+  useEffect(() => {
+    if (isAuthenticated) {
+      setAuthLocked(false);
+    }
+  }, [isAuthenticated]);
 
   // Available target formats map
   const getTargetsForExt = (filename: string): string[] => {
@@ -58,6 +70,10 @@ export const ConverterView: React.FC<ConverterViewProps> = ({
   };
 
   const handleFileSelection = (file: File) => {
+    if (authLocked && !isAuthenticated) {
+      onRequireAuth();
+      return;
+    }
     setSelectedFile(file);
     setStatus('idle');
     setErrorMessage(null);
@@ -72,13 +88,21 @@ export const ConverterView: React.FC<ConverterViewProps> = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
+    if (authLocked && !isAuthenticated) {
+      onRequireAuth();
+      return;
+    }
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleFileSelection(e.dataTransfer.files[0]);
     }
   };
 
-  // Sample preset generator for rapid academic presentation
+  // Sample preset generator for rapid presentation
   const loadPreset = (type: 'csv' | 'json' | 'md' | 'txt') => {
+    if (authLocked && !isAuthenticated) {
+      onRequireAuth();
+      return;
+    }
     let content = '';
     let name = '';
     let mime = 'text/plain';
@@ -99,12 +123,12 @@ export const ConverterView: React.FC<ConverterViewProps> = ({
       );
       mime = 'application/json';
     } else if (type === 'md') {
-      name = 'architecture_overview.md';
-      content = `# System Security Architecture\n\n## Abstract\nDemonstrating high-concurrency file conversion with zero-trust validation.\n\n- Parameterized SQL execution\n- Sliding window rate limiting\n- Isolated private storage`;
+      name = 'project_overview.md';
+      content = `# Document Conversion Platform\n\n## Summary\nDemonstrating high-fidelity asynchronous file conversions.\n\n- Fast multi-format processing\n- Isolated user workspace\n- Secure cloud storage`;
       mime = 'text/markdown';
     } else {
-      name = 'audit_certificate.txt';
-      content = 'ACADEMIC AUDIT VERIFICATION CERTIFICATE\n\nDate: 2026-09-02\nVerification Engine: File System Converter v1.0\nStatus: All cryptographic and concurrency parameters verified.';
+      name = 'meeting_notes.txt';
+      content = 'PROJECT NOTES & SUMMARY\n\nDate: 2026-09-02\nTopic: Document Conversion Platform\nStatus: High-fidelity transformations for data and documents ready for export.';
       mime = 'text/plain';
     }
 
@@ -114,7 +138,9 @@ export const ConverterView: React.FC<ConverterViewProps> = ({
   };
 
   const startConversion = async () => {
+    // When an unauthenticated user converts, lock input and prompt to log in
     if (!isAuthenticated) {
+      setAuthLocked(true);
       onRequireAuth();
       return;
     }
@@ -125,7 +151,7 @@ export const ConverterView: React.FC<ConverterViewProps> = ({
       setStatus('uploading');
       setErrorMessage(null);
 
-      // Step 1: Upload & File Security validation
+      // Step 1: Upload & File validation
       await new Promise((r) => setTimeout(r, 400));
       setStatus('validating');
 
@@ -154,7 +180,7 @@ export const ConverterView: React.FC<ConverterViewProps> = ({
           } else if (pollRes.conversion.status === 'failed') {
             clearInterval(pollInterval);
             setStatus('error');
-            setErrorMessage(pollRes.conversion.errorMessage || 'Conversion failed during worker processing.');
+            setErrorMessage(pollRes.conversion.errorMessage || 'Conversion failed during processing.');
           } else if (attempts > 30) {
             clearInterval(pollInterval);
             setStatus('error');
@@ -173,6 +199,7 @@ export const ConverterView: React.FC<ConverterViewProps> = ({
   };
 
   const availableTargets = selectedFile ? getTargetsForExt(selectedFile.name) : ['json', 'csv', 'html', 'pdf', 'yaml'];
+  const isInputDisabled = authLocked && !isAuthenticated;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -180,12 +207,49 @@ export const ConverterView: React.FC<ConverterViewProps> = ({
       <div>
         <h1 className="text-2xl font-bold text-white tracking-tight">Conversion Hub</h1>
         <p className="text-sm text-slate-500 mt-0.5">
-          Select or drop a file to convert between formats with real-time security validation and asynchronous worker processing.
+          Select or drop a file to convert between formats with instant asynchronous processing.
         </p>
       </div>
 
+      {/* Lock Notice Banner when conversion is triggered by an unauthenticated user */}
+      {isInputDisabled && (
+        <div className="p-4 rounded-xl bg-gradient-to-r from-blue-950/60 to-indigo-950/60 border border-blue-500/40 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg animate-in fade-in">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0 shadow-sm">
+              <Lock className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white tracking-wide uppercase">
+                Login Necessário para Converter
+              </h3>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Os campos foram bloqueados temporariamente. Faça login ou crie sua conta para processar o arquivo no servidor e liberar o download imediato.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {onQuickDemoLogin && (
+              <button
+                onClick={onQuickDemoLogin}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#0a0a0c] hover:bg-slate-800 text-green-400 border border-green-500/30 text-xs font-mono transition cursor-pointer shadow-xs"
+              >
+                <KeyRound className="h-3.5 w-3.5" />
+                <span>Conta Demo (1 Clique)</span>
+              </button>
+            )}
+            <button
+              onClick={onRequireAuth}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase transition cursor-pointer shadow-sm shadow-blue-900/40"
+            >
+              <Lock className="h-3.5 w-3.5" />
+              <span>Entrar / Cadastrar</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Bento Preset Bar */}
-      <div className="p-3.5 rounded-xl bg-[#13151a] border border-slate-800 flex flex-wrap items-center justify-between gap-2">
+      <div className={`p-3.5 rounded-xl bg-[#13151a] border border-slate-800 flex flex-wrap items-center justify-between gap-2 transition ${isInputDisabled ? 'opacity-60 pointer-events-none' : ''}`}>
         <div className="flex items-center gap-2 text-xs text-slate-400">
           <Sparkles className="h-3.5 w-3.5 text-blue-400" />
           <span className="font-semibold text-slate-300 uppercase tracking-wider text-[11px]">Quick Test Presets:</span>
@@ -193,25 +257,29 @@ export const ConverterView: React.FC<ConverterViewProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={() => loadPreset('csv')}
-            className="px-3 py-1.5 rounded-lg bg-[#0a0a0c] hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-mono transition cursor-pointer"
+            disabled={isInputDisabled}
+            className="px-3 py-1.5 rounded-lg bg-[#0a0a0c] hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-mono transition cursor-pointer disabled:opacity-50"
           >
             CSV Sample
           </button>
           <button
             onClick={() => loadPreset('json')}
-            className="px-3 py-1.5 rounded-lg bg-[#0a0a0c] hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-mono transition cursor-pointer"
+            disabled={isInputDisabled}
+            className="px-3 py-1.5 rounded-lg bg-[#0a0a0c] hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-mono transition cursor-pointer disabled:opacity-50"
           >
             JSON Sample
           </button>
           <button
             onClick={() => loadPreset('md')}
-            className="px-3 py-1.5 rounded-lg bg-[#0a0a0c] hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-mono transition cursor-pointer"
+            disabled={isInputDisabled}
+            className="px-3 py-1.5 rounded-lg bg-[#0a0a0c] hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-mono transition cursor-pointer disabled:opacity-50"
           >
             Markdown Sample
           </button>
           <button
             onClick={() => loadPreset('txt')}
-            className="px-3 py-1.5 rounded-lg bg-[#0a0a0c] hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-mono transition cursor-pointer"
+            disabled={isInputDisabled}
+            className="px-3 py-1.5 rounded-lg bg-[#0a0a0c] hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-mono transition cursor-pointer disabled:opacity-50"
           >
             TXT Sample
           </button>
@@ -221,23 +289,42 @@ export const ConverterView: React.FC<ConverterViewProps> = ({
       {/* Drag and Drop Zone Bento Card */}
       <div
         onDragOver={(e) => {
+          if (isInputDisabled) return;
           e.preventDefault();
           setIsDragging(true);
         }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        className={`border-2 border-dashed rounded-xl p-8 text-center transition cursor-pointer ${
-          isDragging
+        onClick={() => {
+          if (isInputDisabled) {
+            onRequireAuth();
+            return;
+          }
+          fileInputRef.current?.click();
+        }}
+        className={`relative border-2 border-dashed rounded-xl p-8 text-center transition cursor-pointer ${
+          isInputDisabled
+            ? 'border-slate-800 bg-[#0e1014] opacity-75'
+            : isDragging
             ? 'border-blue-500 bg-blue-500/10'
             : selectedFile
             ? 'border-green-500/40 bg-green-500/5'
             : 'border-slate-800 hover:border-slate-700 bg-[#13151a] hover:bg-slate-900/60'
         }`}
       >
+        {isInputDisabled && (
+          <div className="absolute inset-0 bg-[#0a0a0c]/50 backdrop-blur-[1px] rounded-xl flex items-center justify-center z-10">
+            <div className="px-3 py-1.5 rounded-lg bg-[#13151a] border border-blue-500/30 text-blue-300 text-xs font-mono flex items-center gap-2 shadow-md">
+              <Lock className="h-3.5 w-3.5 text-blue-400" />
+              <span>Input bloqueado — faça login para selecionar arquivos</span>
+            </div>
+          </div>
+        )}
+
         <input
           ref={fileInputRef}
           type="file"
+          disabled={isInputDisabled}
           className="hidden"
           onChange={(e) => {
             if (e.target.files && e.target.files[0]) {
@@ -286,8 +373,8 @@ export const ConverterView: React.FC<ConverterViewProps> = ({
               <select
                 value={targetFormat}
                 onChange={(e) => setTargetFormat(e.target.value)}
-                disabled={status !== 'idle' && status !== 'error'}
-                className="bg-[#0a0a0c] border border-slate-800 rounded-lg px-4 py-2 text-xs text-slate-200 font-mono focus:border-blue-500 focus:outline-hidden uppercase"
+                disabled={(status !== 'idle' && status !== 'error') || isInputDisabled}
+                className="bg-[#0a0a0c] border border-slate-800 rounded-lg px-4 py-2 text-xs text-slate-200 font-mono focus:border-blue-500 focus:outline-hidden uppercase disabled:opacity-50"
               >
                 {availableTargets.map((target) => (
                   <option key={target} value={target}>
@@ -302,7 +389,12 @@ export const ConverterView: React.FC<ConverterViewProps> = ({
                 disabled={status !== 'idle' && status !== 'error'}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold text-xs uppercase transition cursor-pointer shadow-sm shadow-blue-900/40"
               >
-                {status === 'idle' || status === 'error' ? (
+                {!isAuthenticated ? (
+                  <>
+                    <Lock className="h-3.5 w-3.5" />
+                    <span>Entrar para Converter</span>
+                  </>
+                ) : status === 'idle' || status === 'error' ? (
                   <>
                     <span>Convert Now</span>
                     <ArrowRight className="h-3.5 w-3.5" />

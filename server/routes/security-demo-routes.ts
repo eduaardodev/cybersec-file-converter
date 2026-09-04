@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { requireAdmin } from '../auth/auth-middleware';
 import { RateLimiter } from '../security/rate-limiter';
 import { FileSecurity } from '../security/file-security';
 import { DatabaseService } from '../db/database';
@@ -8,6 +9,9 @@ import { AppError, handleAppError } from '../errors/app-error';
 const router = Router();
 const db = DatabaseService.getInstance();
 const audit = AuditService.getInstance();
+
+// Strictly restrict security testing lab tools to admin users
+router.use(requireAdmin);
 
 // 1. SQL Injection Demo
 router.post('/sql-injection', (req: Request, res: Response) => {

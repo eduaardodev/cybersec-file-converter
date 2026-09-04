@@ -12,7 +12,7 @@ async function seed() {
 
   const { uploadDir, convertedDir } = FileSecurity.initStorageDirectories();
 
-  // 1. Create or update Demo User
+  // 1. Create or update Demo Admin User
   const demoEmail = 'demo@converter.local';
   let demoUser = db.findUserByEmail(demoEmail);
 
@@ -27,9 +27,29 @@ async function seed() {
       updatedAt: new Date().toISOString(),
     };
     db.createUser(demoUser);
-    console.log(`✅ Demo user created: ${demoEmail} (Password: Demo1234!)`);
+    console.log(`✅ Demo admin created: ${demoEmail} (Password: Demo1234!)`);
   } else {
-    console.log(`ℹ️ Demo user already exists: ${demoEmail}`);
+    console.log(`ℹ️ Demo admin already exists: ${demoEmail}`);
+  }
+
+  // 1b. Create or update Standard End-User
+  const standardEmail = 'user@converter.local';
+  let standardUser = db.findUserByEmail(standardEmail);
+
+  if (!standardUser) {
+    const userPasswordHash = await bcrypt.hash('User1234!', 10);
+    standardUser = {
+      id: crypto.randomUUID(),
+      email: standardEmail,
+      passwordHash: userPasswordHash,
+      role: 'user',
+      createdAt: new Date(Date.now() - 3600 * 12 * 1000).toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    db.createUser(standardUser);
+    console.log(`✅ Standard user created: ${standardEmail} (Password: User1234!)`);
+  } else {
+    console.log(`ℹ️ Standard user already exists: ${standardEmail}`);
   }
 
   // 2. Create sample files & sample conversion history

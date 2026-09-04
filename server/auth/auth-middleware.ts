@@ -54,3 +54,14 @@ export function optionalAuth(req: AuthenticatedRequest, res: Response, next: Nex
   }
   next();
 }
+
+// Require admin privilege for audit and security testing tools
+export function requireAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+  requireAuth(req, res, () => {
+    if (req.user?.role !== 'admin') {
+      throw AppError.authorization('Acesso restrito: Privilégios de Administrador são necessários para visualizar auditoria.');
+    }
+    next();
+  });
+}
+

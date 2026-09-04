@@ -7,6 +7,8 @@ import {
   Clock,
   ArrowRight,
   FileCheck,
+  Sparkles,
+  Lock,
 } from 'lucide-react';
 import { ConversionJob } from '../types/client';
 
@@ -15,6 +17,9 @@ interface HistoryViewProps {
   onDownload: (id: string, filename: string) => void;
   onNavigateToConvert: () => void;
   loading?: boolean;
+  isAuthenticated?: boolean;
+  onRequireAuth?: () => void;
+  isAdmin?: boolean;
 }
 
 export const HistoryView: React.FC<HistoryViewProps> = ({
@@ -22,6 +27,9 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
   onDownload,
   onNavigateToConvert,
   loading = false,
+  isAuthenticated = false,
+  onRequireAuth,
+  isAdmin = false,
 }) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'failed' | 'processing'>('all');
@@ -31,6 +39,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       (c.outputFileName || '').toLowerCase().includes(search.toLowerCase()) ||
       c.sourceFormat.toLowerCase().includes(search.toLowerCase()) ||
       c.targetFormat.toLowerCase().includes(search.toLowerCase()) ||
+      (c.userEmail || '').toLowerCase().includes(search.toLowerCase()) ||
       c.id.toLowerCase().includes(search.toLowerCase());
 
     const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
@@ -42,9 +51,20 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       {/* Bento Header & Filter Controls */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Conversion History</h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-bold text-white tracking-tight">
+              {isAdmin ? 'Histórico de Conversões dos Usuários' : 'Conversion History'}
+            </h1>
+            {isAdmin && (
+              <span className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono text-[10px] font-bold uppercase">
+                Admin View
+              </span>
+            )}
+          </div>
           <p className="text-sm text-slate-500 mt-0.5">
-            Complete audit record of all transformation jobs processed for your account
+            {isAdmin
+              ? 'Visualização centralizada de todas as transformações de arquivos executadas pelos usuários na plataforma.'
+              : 'Overview and downloads of all transformation jobs processed for your workspace.'}
           </p>
         </div>
 
@@ -56,8 +76,8 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search filename or format..."
-              className="bg-[#13151a] border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:border-blue-500 focus:outline-hidden"
+              placeholder={isAdmin ? 'Filtrar por usuário, arquivo ou formato...' : 'Search filename or format...'}
+              className="bg-[#13151a] border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:border-blue-500 focus:outline-hidden w-64"
             />
           </div>
 
@@ -74,6 +94,32 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
           </select>
         </div>
       </div>
+
+      {/* Visitor Banner if not authenticated */}
+      {!isAuthenticated && (
+        <div className="p-4 rounded-xl bg-[#13151a] border border-blue-500/20 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider">Visitor Mode</h3>
+              <p className="text-[11px] text-slate-400">
+                You are browsing conversion history in free visitor mode. Log in to permanently sync and access your converted documents anywhere.
+              </p>
+            </div>
+          </div>
+          {onRequireAuth && (
+            <button
+              onClick={onRequireAuth}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase transition cursor-pointer shrink-0 shadow-sm shadow-blue-900/30"
+            >
+              <Lock className="h-3 w-3" />
+              <span>Sign In / Register</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Bento Table Card */}
       <div className="rounded-xl bg-[#13151a] border border-slate-800 overflow-hidden shadow-xs">
@@ -95,6 +141,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
               <thead>
                 <tr className="border-b border-slate-800 bg-[#0a0a0c] text-slate-400 font-mono text-[10px] uppercase tracking-wider">
                   <th className="py-3 px-4">Job / Output Name</th>
+                  {isAdmin && <th className="py-3 px-4">Usuário</th>}
                   <th className="py-3 px-4">Transformation</th>
                   <th className="py-3 px-4">Timestamp</th>
                   <th className="py-3 px-4">Status</th>
@@ -110,6 +157,15 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
                       </div>
                       <div className="text-[10px] text-slate-500 font-mono mt-0.5">ID: {conv.id}</div>
                     </td>
+
+                    {isAdmin && (
+                      <td className="py-3.5 px-4">
+                        <div className="font-mono text-xs text-blue-300">
+                          {conv.userEmail || `User: ${conv.userId.slice(0, 8)}`}
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-mono">UID: {conv.userId.slice(0, 8)}...</div>
+                      </td>
+                    )}
 
                     <td className="py-3.5 px-4">
                       <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#0a0a0c] text-slate-300 border border-slate-800 font-mono text-[10px] uppercase">

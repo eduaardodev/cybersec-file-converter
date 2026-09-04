@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { requireAuth, AuthenticatedRequest } from '../auth/auth-middleware';
+import { requireAuth, requireAdmin, AuthenticatedRequest } from '../auth/auth-middleware';
 import { DatabaseService } from '../db/database';
 import { ConversionQueue } from '../queue/conversion-queue';
 import { handleAppError } from '../errors/app-error';
@@ -8,8 +8,8 @@ const router = Router();
 const db = DatabaseService.getInstance();
 const queue = ConversionQueue.getInstance();
 
-// Audit logs list
-router.get('/audit', (req, res) => {
+// Audit logs list - STRICTLY ADMIN ONLY
+router.get('/audit', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
   try {
     const filter = typeof req.query.filter === 'string' ? req.query.filter : undefined;
     const limit = req.query.limit ? Math.min(Number(req.query.limit), 200) : 100;
@@ -20,8 +20,8 @@ router.get('/audit', (req, res) => {
   }
 });
 
-// Security events list
-router.get('/security/events', (req, res) => {
+// Security events list - STRICTLY ADMIN ONLY
+router.get('/security/events', requireAdmin, (req: AuthenticatedRequest, res: Response) => {
   try {
     const limit = req.query.limit ? Math.min(Number(req.query.limit), 200) : 100;
     const events = db.getRecentSecurityEvents(limit);
@@ -31,13 +31,26 @@ router.get('/security/events', (req, res) => {
   }
 });
 
-// User dashboard stats & system status
+// User dashboard stats - Technical systemStatus only provided to admin role
 router.get('/stats', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
     const userStats = db.getDashboardStats(userId);
-    const queueStats = queue.getQueueStats();
+    const isAdmin = req.user?.role === 'admin';
 
+    if (!isAdmin) {
+      // Clean non-technical metrics for regular user
+      return res.json({
+        userStats: {
+          totalConversions: userStats.totalConversions,
+          successfulConversions: userStats.successfulConversions,
+          failedConversions: userStats.failedConversions,
+          filesUploaded: userStats.filesUploaded,
+        },
+      });
+    }
+
+    const queueStats = queue.getQueueStats();
     res.json({
       userStats,
       systemStatus: {
@@ -55,3 +68,4 @@ router.get('/stats', requireAuth, (req: AuthenticatedRequest, res: Response) => 
 });
 
 export default router;
+

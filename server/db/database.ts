@@ -283,6 +283,17 @@ export class DatabaseService {
     return this.query<ConversionJob>(`SELECT * FROM conversions WHERE userId = ? ORDER BY createdAt DESC`, [userId]);
   }
 
+  public getAllConversionsWithUser(limit: number = 200): (ConversionJob & { userEmail?: string })[] {
+    return this.query<ConversionJob & { userEmail?: string }>(
+      `SELECT c.*, u.email as userEmail 
+       FROM conversions c 
+       LEFT JOIN users u ON c.userId = u.id 
+       ORDER BY c.createdAt DESC 
+       LIMIT ?`,
+      [limit]
+    );
+  }
+
   public countUserActiveConversions(userId: string): number {
     const res = this.queryOne<{ count: number }>(
       `SELECT COUNT(*) as count FROM conversions WHERE userId = ? AND status IN ('pending', 'processing')`,

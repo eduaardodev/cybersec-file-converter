@@ -8,6 +8,7 @@ import { SecurityDemoView } from './components/SecurityDemoView';
 import { AuthModal } from './components/AuthModal';
 import { api } from './services/api';
 import { User, ConversionJob, DashboardStats } from './types/client';
+import { ShieldAlert } from 'lucide-react';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<TabType>('dashboard');
@@ -34,9 +35,13 @@ export default function App() {
     }
   };
 
-  // Fetch stats and conversions
+  // Fetch stats and conversions (strictly for authenticated users)
   const refreshData = async () => {
-    if (!user) return;
+    if (!user) {
+      setStats(null);
+      setConversions([]);
+      return;
+    }
     try {
       const [statsData, convData] = await Promise.all([
         api.getStats().catch(() => null),
@@ -95,6 +100,8 @@ export default function App() {
     (c) => c.status === 'processing' || c.status === 'pending'
   ).length;
 
+  const isAdmin = user?.role === 'admin';
+
   return (
     <div className="min-h-screen bg-[#0a0a0c] text-slate-300 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
       {/* Header */}
@@ -112,6 +119,7 @@ export default function App() {
           currentTab={currentTab}
           onSelectTab={setCurrentTab}
           activeJobsCount={activeJobsCount}
+          isAdmin={isAdmin}
         />
 
         {/* View Content */}
@@ -123,6 +131,9 @@ export default function App() {
               onNavigateToConvert={() => setCurrentTab('convert')}
               onNavigateToSecurity={() => setCurrentTab('security-demo')}
               onDownload={handleDownload}
+              isAdmin={isAdmin}
+              isAuthenticated={!!user}
+              onRequireAuth={() => setIsAuthOpen(true)}
             />
           )}
 
@@ -135,6 +146,7 @@ export default function App() {
               onDownload={handleDownload}
               isAuthenticated={!!user}
               onRequireAuth={() => setIsAuthOpen(true)}
+              onQuickDemoLogin={handleQuickDemoLogin}
             />
           )}
 
@@ -143,10 +155,31 @@ export default function App() {
               conversions={conversions}
               onDownload={handleDownload}
               onNavigateToConvert={() => setCurrentTab('convert')}
+              isAuthenticated={!!user}
+              onRequireAuth={() => setIsAuthOpen(true)}
+              isAdmin={isAdmin}
             />
           )}
 
-          {currentTab === 'security-demo' && <SecurityDemoView />}
+          {currentTab === 'security-demo' && (
+            isAdmin ? (
+              <SecurityDemoView />
+            ) : (
+              <div className="p-8 max-w-md mx-auto text-center bg-[#13151a] border border-slate-800 rounded-xl space-y-4 my-12 shadow-md">
+                <ShieldAlert className="h-10 w-10 text-amber-500 mx-auto" />
+                <h2 className="text-base font-bold text-white uppercase tracking-wider">Acesso Restrito: Administrador</h2>
+                <p className="text-xs text-slate-400">
+                  Esta seção contém ferramentas de auditoria e testes de ataque de concorrência restritas a administradores.
+                </p>
+                <button
+                  onClick={() => setCurrentTab('dashboard')}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold uppercase transition cursor-pointer"
+                >
+                  Voltar ao Dashboard
+                </button>
+              </div>
+            )
+          )}
         </main>
       </div>
 

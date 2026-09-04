@@ -1,0 +1,37 @@
+[
+  {
+    "id": "101",
+    "name": "Ana Silva",
+    "department": "Engineering",
+    "salary": "8500",
+    "status": "Active"
+  },
+  {
+    "id": "102",
+    "name": "Carlos Santos",
+    "department": "Security",
+    "salary": "9200",
+    "status": "Active"
+  },
+  {
+    "id": "103",
+    "name": "Mariana Costa",
+    "department": "DevOps",
+    "salary": "8900",
+    "status": "Active"
+  },
+  {
+    "id": "104",
+    "name": "Rafael Lima",
+    "department": "Data Science",
+    "salary": "9100",
+    "status": "Active"
+  },
+  {
+    "id": "105",
+    "name": "Beatriz Rocha",
+    "department": "Architecture",
+    "salary": "9800",
+    "status": "Active"
+  }
+]

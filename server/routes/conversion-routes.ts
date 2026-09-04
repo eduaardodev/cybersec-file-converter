@@ -64,10 +64,13 @@ router.post('/', requireAuth, RateLimiter.conversionLimiter, async (req: Authent
   }
 });
 
-// List user conversions
+// List conversions (for admin: all users' conversions; for regular user: own conversions)
 router.get('/', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   try {
-    const conversions = db.findConversionsByUserId(req.user!.id);
+    const isAdmin = req.user?.role === 'admin';
+    const conversions = isAdmin
+      ? db.getAllConversionsWithUser(200)
+      : db.findConversionsByUserId(req.user!.id);
     res.json({ conversions });
   } catch (err) {
     handleAppError(err, res);
@@ -82,8 +85,9 @@ router.get('/:id', requireAuth, (req: AuthenticatedRequest, res: Response) => {
       throw AppError.notFound('Conversion job not found.');
     }
 
+    const isAdmin = req.user?.role === 'admin';
     // Strict Authorization
-    if (conversion.userId !== req.user!.id) {
+    if (conversion.userId !== req.user!.id && !isAdmin) {
       audit.logSecurityEvent({
         type: 'UNAUTHORIZED_ACCESS',
         severity: 'high',
@@ -109,8 +113,9 @@ router.get('/:id/download', requireAuth, (req: AuthenticatedRequest, res: Respon
       throw AppError.notFound('Conversion job not found.');
     }
 
+    const isAdmin = req.user?.role === 'admin';
     // Strict Authorization
-    if (conversion.userId !== req.user!.id) {
+    if (conversion.userId !== req.user!.id && !isAdmin) {
       audit.logSecurityEvent({
         type: 'UNAUTHORIZED_ACCESS',
         severity: 'high',

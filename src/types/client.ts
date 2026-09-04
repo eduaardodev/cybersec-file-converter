@@ -21,6 +21,7 @@ export interface StoredFile {
 export interface ConversionJob {
   id: string;
   userId: string;
+  userEmail?: string;
   fileId: string;
   sourceFormat: string;
   targetFormat: string;

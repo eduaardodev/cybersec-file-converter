@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Lock, Mail, ShieldAlert, Sparkles } from 'lucide-react';
+import { X, Lock, Mail, ShieldAlert } from 'lucide-react';
 import { api } from '../services/api';
 import { User } from '../types/client';
 
@@ -15,6 +15,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showQuickAccess, setShowQuickAccess] = useState(false);
 
   if (!isOpen) return null;
 
@@ -39,11 +40,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     }
   };
 
-  const fillDemoCredentials = () => {
-    setEmail('demo@converter.local');
-    setPassword('Demo1234!');
-    setIsRegister(false);
+  const loginAs = async (role: 'admin' | 'user') => {
     setError(null);
+    setLoading(true);
+    try {
+      const credentials = role === 'admin'
+        ? { email: 'demo@converter.local', pass: 'Demo1234!' }
+        : { email: 'user@converter.local', pass: 'User1234!' };
+
+      setEmail(credentials.email);
+      setPassword(credentials.pass);
+      const res = await api.login(credentials.email, credentials.pass);
+      onSuccess(res.user);
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Erro ao realizar login rápido.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -62,28 +76,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           </div>
           <div>
             <h2 className="text-base font-bold text-white tracking-tight uppercase">
-              {isRegister ? 'Create Academic Account' : 'Authenticate to Platform'}
+              {isRegister ? 'Create Account' : 'Authenticate to Platform'}
             </h2>
             <p className="text-[11px] text-slate-500">
               Pass-hash authentication with salted bcrypt & JWT authorization
             </p>
           </div>
-        </div>
-
-        {/* 1-Click Demo Fill Button */}
-        <div className="mb-4 p-3 rounded-lg bg-[#0a0a0c] border border-slate-800 flex items-center justify-between">
-          <div className="text-xs text-slate-300">
-            <span className="font-semibold block text-slate-200">Academic Presentation?</span>
-            <span className="text-[11px] text-slate-500">Use the pre-seeded evaluation account</span>
-          </div>
-          <button
-            type="button"
-            onClick={fillDemoCredentials}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase shadow-sm transition cursor-pointer shrink-0"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            Fill Demo
-          </button>
         </div>
 
         {error && (
@@ -106,7 +104,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@university.edu"
+                placeholder="name@example.com"
                 className="w-full bg-[#0a0a0c] border border-slate-800 focus:border-blue-500 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-hidden font-mono"
               />
             </div>
@@ -125,7 +123,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 className="w-full bg-[#0a0a0c] border border-slate-800 focus:border-blue-500 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-hidden font-mono"
               />
             </div>
-            <p className="text-[11px] text-slate-500 mt-1 font-mono">Passwords are never saved in plaintext (Bcrypt 10 rounds).</p>
           </div>
 
           <button
@@ -137,18 +134,65 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           </button>
         </form>
 
-        <div className="mt-4 pt-4 border-t border-slate-800 text-center text-xs text-slate-400">
-          {isRegister ? 'Already have an account?' : "Don't have an account yet?"}{' '}
-          <button
-            type="button"
-            onClick={() => {
-              setIsRegister(!isRegister);
-              setError(null);
-            }}
-            className="text-blue-400 hover:underline font-bold cursor-pointer"
-          >
-            {isRegister ? 'Sign In' : 'Create an Account'}
-          </button>
+        <div className="mt-4 pt-4 border-t border-slate-800/80 flex flex-col items-center gap-3 text-xs text-slate-400">
+          <div>
+            {isRegister ? 'Already have an account?' : "Don't have an account yet?"}{' '}
+            <button
+              type="button"
+              onClick={() => {
+                setIsRegister(!isRegister);
+                setError(null);
+              }}
+              className="text-blue-400 hover:underline font-bold cursor-pointer"
+            >
+              {isRegister ? 'Sign In' : 'Create an Account'}
+            </button>
+          </div>
+
+          {/* Discreet/hidden quick login trigger for Admin or End-User */}
+          <div className="w-full pt-1 flex flex-col items-center">
+            {!showQuickAccess ? (
+              <button
+                type="button"
+                onClick={() => setShowQuickAccess(true)}
+                className="text-[10px] text-slate-600 hover:text-slate-400 transition cursor-pointer flex items-center gap-1 font-mono"
+                title="Acesso de teste"
+              >
+                <span>•••</span>
+                <span>acesso rápido</span>
+              </button>
+            ) : (
+              <div className="w-full p-2 rounded-lg bg-[#0a0a0c] border border-slate-800/80 flex items-center justify-between gap-2 text-[11px] animate-in fade-in duration-150">
+                <span className="text-slate-500 font-mono text-[10px]">Entrar direto:</span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => loginAs('admin')}
+                    className="px-2.5 py-1 rounded bg-blue-950/40 hover:bg-blue-900/60 border border-blue-800/40 text-blue-300 font-mono text-[10px] font-semibold transition cursor-pointer disabled:opacity-50"
+                  >
+                    Admin
+                  </button>
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => loginAs('user')}
+                    className="px-2.5 py-1 rounded bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 font-mono text-[10px] font-semibold transition cursor-pointer disabled:opacity-50"
+                  >
+                    Usuário Final
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickAccess(false)}
+                    className="p-1 text-slate-500 hover:text-slate-300 transition cursor-pointer ml-0.5"
+                    title="Fechar"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

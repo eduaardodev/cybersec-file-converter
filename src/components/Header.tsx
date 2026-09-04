@@ -1,20 +1,21 @@
 import React from 'react';
-import { ShieldCheck, User as UserIcon, LogOut, Terminal, Lock, KeyRound } from 'lucide-react';
+import { User as UserIcon, LogOut, Lock } from 'lucide-react';
 import { User } from '../types/client';
 
 interface HeaderProps {
   user: User | null;
   onOpenAuth: () => void;
   onLogout: () => void;
-  onQuickDemoLogin: () => void;
+  onQuickDemoLogin?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   user,
   onOpenAuth,
   onLogout,
-  onQuickDemoLogin,
 }) => {
+  const isAdmin = user?.role === 'admin';
+
   return (
     <header className="border-b border-slate-800 bg-[#0d0f14] text-slate-100 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -26,22 +27,15 @@ export const Header: React.FC<HeaderProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold tracking-tight text-blue-500 text-base uppercase">FS-CONVERT</span>
-              <span className="text-[10px] font-mono font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400">
-                Academic
-              </span>
+              {isAdmin && (
+                <span className="text-[10px] font-mono font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                  Admin
+                </span>
+              )}
             </div>
-            <p className="text-[10px] text-slate-500 font-mono hidden sm:block">SECURITY-FIRST ARCHITECTURE</p>
-          </div>
-        </div>
-
-        {/* Center Security Status Badge */}
-        <div className="hidden lg:flex items-center gap-2.5">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-[11px] font-semibold text-green-500 uppercase font-mono">Backend Online</span>
-          </div>
-          <div className="px-3 py-1.5 bg-[#13151a] border border-slate-800 rounded-lg text-xs font-mono text-slate-400">
-            v2.4.0-SEC
+            <p className="text-[10px] text-slate-500 font-mono hidden sm:block">
+              {isAdmin ? 'ADMINISTRATOR CONSOLE' : 'FAST CLOUD DOCUMENT CONVERTER'}
+            </p>
           </div>
         </div>
 
@@ -53,7 +47,13 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                 <UserIcon className="h-3.5 w-3.5 text-slate-400" />
                 <span className="text-slate-200 font-medium">{user.email}</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono uppercase">
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded font-mono uppercase font-bold ${
+                    isAdmin
+                      ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
                   {user.role}
                 </span>
               </div>
@@ -69,15 +69,6 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <button
-                id="btn-demo-quick-login"
-                onClick={onQuickDemoLogin}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 text-xs font-medium transition cursor-pointer shadow-sm"
-                title="1-Click demo authentication for academic presentation"
-              >
-                <KeyRound className="h-3.5 w-3.5" />
-                <span>Demo Account</span>
-              </button>
               <button
                 id="btn-open-login"
                 onClick={onOpenAuth}

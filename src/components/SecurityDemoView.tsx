@@ -154,12 +154,6 @@ export const SecurityDemoView: React.FC = () => {
       {/* Bento Title & Description */}
       <div className="p-6 rounded-xl bg-[#13151a] border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold">
-              Academic Demonstration Suite
-            </span>
-            <span className="text-xs text-slate-500 font-mono">Section 18 & 21 Compliance</span>
-          </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">
             Security, Auditability & Concurrency Testing Lab
           </h1>
