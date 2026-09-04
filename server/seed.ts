@@ -193,7 +193,7 @@ This prototype validates multi-tenant file system conversions under strict param
       type: 'SQL_INJECTION_ATTEMPT',
       severity: 'high' as const,
       description: 'SQL injection string sanitized and passed safely through parameterized statement: "admin\' OR \'1\'=\'1"',
-      endpoint: '/api/security-demo/sql-injection',
+      endpoint: '/api/auth/login',
       metadata: { input: "admin' OR '1'='1", technique: 'Tautology bypass neutralized' },
     },
     {

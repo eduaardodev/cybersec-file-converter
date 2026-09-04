@@ -11,7 +11,6 @@ import authRoutes from './server/routes/auth-routes';
 import fileRoutes from './server/routes/file-routes';
 import conversionRoutes from './server/routes/conversion-routes';
 import auditRoutes from './server/routes/audit-routes';
-import securityDemoRoutes from './server/routes/security-demo-routes';
 
 const PORT = 3000;
 
@@ -55,7 +54,6 @@ async function startServer() {
   app.use('/api/auth', authRoutes);
   app.use('/api/files', fileRoutes);
   app.use('/api/conversions', conversionRoutes);
-  app.use('/api/security-demo', securityDemoRoutes);
   app.use('/api', auditRoutes);
 
   // Fallback 404 for undefined /api routes

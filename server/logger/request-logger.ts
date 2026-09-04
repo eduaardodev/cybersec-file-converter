@@ -30,8 +30,8 @@ export function requestLogger(req: Request, res: Response, next: NextFunction): 
       durationMs: duration,
     };
 
-    if (statusCode >= 400) {
-      console.warn(`[HTTP] ${method} ${url} ${statusCode} - ${duration}ms (req: ${requestId.slice(0, 8)})`);
+    if (statusCode >= 500) {
+      console.error(`[HTTP] ${method} ${url} ${statusCode} - ${duration}ms (req: ${requestId.slice(0, 8)})`);
     } else {
       console.log(`[HTTP] ${method} ${url} ${statusCode} - ${duration}ms (req: ${requestId.slice(0, 8)})`);
     }

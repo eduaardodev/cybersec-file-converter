@@ -70,7 +70,9 @@ export function handleAppError(err: unknown, res: Response): void {
   }
 
   // Generic unhandled error - strictly hide stack traces & internal paths
-  console.error('Unhandled server error:', err);
+  const rawMsg = err instanceof Error ? err.message : String(err);
+  const sanitizedMsg = rawMsg.replace(/(\/private\/[^\s]+|\/etc\/[^\s]+|master\.key|password[=:][^\s]+)/gi, '[REDACTED_SYSTEM_PATH]');
+  console.error('Unhandled server error [sanitized]:', sanitizedMsg);
   res.status(500).json({
     error: {
       code: 'INTERNAL_SERVER_ERROR',

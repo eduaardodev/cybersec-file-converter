@@ -199,39 +199,6 @@ class ApiService {
       method: 'POST',
     });
   }
-
-  // SECURITY DEMO CALLS
-  public async testSqlInjection(testInput: string): Promise<any> {
-    return this.request('/api/security-demo/sql-injection', {
-      method: 'POST',
-      body: JSON.stringify({ testInput }),
-    });
-  }
-
-  public async testRateLimit(): Promise<any> {
-    return this.request('/api/security-demo/rate-limit', {
-      method: 'POST',
-    });
-  }
-
-  public async testUploadSecurity(scenario: string, custom?: { filename: string; mime: string; size: number }): Promise<any> {
-    return this.request('/api/security-demo/upload', {
-      method: 'POST',
-      body: JSON.stringify({
-        scenario,
-        customFilename: custom?.filename,
-        customMime: custom?.mime,
-        customSize: custom?.size,
-      }),
-    });
-  }
-
-  public async testErrorHandling(errorType: string): Promise<any> {
-    return this.request('/api/security-demo/errors', {
-      method: 'POST',
-      body: JSON.stringify({ errorType }),
-    });
-  }
 }
 
 export const api = new ApiService();

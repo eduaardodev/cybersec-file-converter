@@ -8,26 +8,22 @@ import {
   RefreshCw,
   Lock,
   Eye,
-  Terminal,
   CheckCircle2,
   XCircle,
   Clock,
   FileText,
   Server,
   X,
-  ExternalLink,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { AuditLog, SecurityEvent, DashboardStats } from '../types/client';
 
 interface AdminAuditDashboardProps {
   stats: DashboardStats | null;
-  onNavigateToSecurity: () => void;
 }
 
 export const AdminAuditDashboard: React.FC<AdminAuditDashboardProps> = ({
   stats,
-  onNavigateToSecurity,
 }) => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
@@ -127,14 +123,6 @@ export const AdminAuditDashboard: React.FC<AdminAuditDashboardProps> = ({
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin text-blue-400' : ''}`} />
             <span>Atualizar</span>
-          </button>
-
-          <button
-            onClick={onNavigateToSecurity}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase transition cursor-pointer shadow-sm shadow-blue-900/30"
-          >
-            <Terminal className="h-3.5 w-3.5" />
-            <span>Laboratório de Testes</span>
           </button>
         </div>
       </div>
@@ -264,7 +252,7 @@ export const AdminAuditDashboard: React.FC<AdminAuditDashboardProps> = ({
                   <Activity className="h-8 w-8 mx-auto mb-2 opacity-30 text-slate-400" />
                   <p className="text-white font-semibold">Nenhum log encontrado para este filtro</p>
                   <p className="text-slate-500 mt-1">
-                    Execute ações no sistema ou no laboratório para gerar novas entradas de auditoria.
+                    Execute ações no sistema para gerar novas entradas de auditoria.
                   </p>
                 </div>
               ) : (
@@ -465,16 +453,6 @@ export const AdminAuditDashboard: React.FC<AdminAuditDashboardProps> = ({
                   OK
                 </span>
               </div>
-            </div>
-
-            <div className="pt-2">
-              <button
-                onClick={onNavigateToSecurity}
-                className="w-full py-2.5 px-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-lg text-xs font-bold uppercase transition flex items-center justify-center gap-2 cursor-pointer shadow-sm shadow-blue-900/30"
-              >
-                <span>Executar Testes de Ataque</span>
-                <ExternalLink className="h-3.5 w-3.5" />
-              </button>
             </div>
           </div>
         </div>

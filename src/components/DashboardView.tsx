@@ -22,7 +22,6 @@ interface DashboardViewProps {
   stats: DashboardStats | null;
   conversions: ConversionJob[];
   onNavigateToConvert: () => void;
-  onNavigateToSecurity: () => void;
   onDownload: (id: string, filename: string) => void;
   isAdmin?: boolean;
   isAuthenticated?: boolean;
@@ -33,7 +32,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   stats,
   conversions,
   onNavigateToConvert,
-  onNavigateToSecurity,
   onDownload,
   isAdmin = false,
   isAuthenticated = false,
@@ -44,7 +42,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return (
       <AdminAuditDashboard
         stats={stats}
-        onNavigateToSecurity={onNavigateToSecurity}
       />
     );
   }

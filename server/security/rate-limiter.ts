@@ -134,12 +134,4 @@ export class RateLimiter {
     max: 100,
     keyGenerator: (req) => (req as any).user?.id || AuditService.getRequestIp(req),
   });
-
-  // 5. Special Demo Limiter: 5 requests per 10 seconds (for crisp live academic demonstration of 429)
-  public static demoTestLimiter = RateLimiter.create({
-    name: 'security-demo-rate',
-    windowMs: 10 * 1000,
-    max: 5,
-    keyGenerator: (req) => AuditService.getRequestIp(req),
-  });
 }
