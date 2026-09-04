@@ -1,0 +1,6 @@
+{
+  "name": "File System Converter",
+  "description": "Full-stack file conversion platform with security auditing, rate limiting, and concurrency controls.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

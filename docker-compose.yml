@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  file-system-converter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: file-system-converter-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - JWT_SECRET=academic_demo_super_secret_jwt_key_2026!
+      - STORAGE_DIR=./storage
+    volumes:
+      - app-storage:/app/storage
+    restart: unless-stopped
+
+volumes:
+  app-storage:
